@@ -27,7 +27,7 @@ module Heroku::Command
     end
 
     def latest_bundle_name
-      %x{ heroku bundles #{app_option}| cut -f 1 -d ' ' }.chomp
+      %x{ heroku bundles #{app_option} | cut -f 1 -d ' ' | sed '$!d' }.chomp
     end
 
     # Capture a new bundle and back it up to S3.

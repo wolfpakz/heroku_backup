@@ -83,7 +83,7 @@ module Heroku::Command
     private
 
       def config_file_path
-        File.join(Dir.getwd, 'config', 'amazon_s3.yml')
+        File.join(Dir.getwd, 'config', 's3.yml')
       end
 
       def missing_config_file?

@@ -41,15 +41,6 @@ module Heroku::Command
         exit
       end
 
-      # Warn that we're about to blow out the latest bundle.
-      print 'WARNING: This will destroy the most recent bundle.  Do you wish to proceed? (y/n) '
-      answer = STDIN.gets.chomp
-      exit unless answer == 'y'
-
-      display "===== Deleting most recent bundle from Heroku..."
-
-      %x{ heroku bundles:destroy #{latest_bundle_name} #{app_option} }
-
       display "===== Capturing a new bundle..."
 
       %x{ heroku bundles:capture #{app_option} }

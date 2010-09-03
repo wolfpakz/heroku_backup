@@ -84,7 +84,7 @@ module Heroku::Command
 
       bundle_file_name = @app + '.tar.gz'
 
-      AWS::S3::S3Object.store(latest_bundle_name + '.tar.gz', open(bundle_file_name), s3_bucket)
+      AWS::S3::S3Object.store(s3_filename(latest_bundle_name), open(bundle_file_name), s3_bucket)
 
       display "===== Deleting the temporary bundle file..."
 
@@ -95,6 +95,12 @@ module Heroku::Command
 
       def config_file_path
         File.join(Dir.getwd, 'config', 's3.yml')
+      end
+      
+      def s3_filename(bundle_name)
+        month_prefix = Date.today.strftime('%Y.%m')
+        filename = bundle_name + '.tar.gz'
+        [month_prefix, filename].join('/')
       end
 
       def missing_config_file?

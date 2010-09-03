@@ -56,7 +56,7 @@ module Heroku::Command
 
       %x{ heroku bundles:capture #{app_option} }
 
-      while %x{ heroku bundles #{app_option} | grep complete }.empty?
+      while %x{ heroku bundles #{app_option} | grep '#{latest_bundle_name}' } =~ /capturing/
         sleep 10
       end
 

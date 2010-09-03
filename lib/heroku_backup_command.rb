@@ -58,7 +58,7 @@ module Heroku::Command
       # Establish a connection to S3.
 
       if missing_keys?
-        aws_creds =  YAML::load(ERB.new(File.read(config_file_path)).result)["default"]
+        aws_creds =  YAML::load(ERB.new(File.read(config_file_path)).result)["production"]
 
         AWS::S3::Base.establish_connection!(
           :access_key_id     => aws_creds["access_key_id"],

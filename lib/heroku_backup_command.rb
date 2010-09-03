@@ -29,6 +29,11 @@ module Heroku::Command
     def latest_bundle_name
       %x{ heroku bundles #{app_option} | cut -f 1 -d ' ' | sed '$!d' }.chomp
     end
+    
+    def unlimited_bundles?
+      bundle_addon = %x{ heroku addons #{app_option} | grep bundles }
+      bundle_addon =~ /unlimited/
+    end
 
     # Capture a new bundle and back it up to S3.
     def index
@@ -39,6 +44,12 @@ module Heroku::Command
                 " or set up a config file at ./config/s3.yml to proceed." +
                 "  \nSee README for more information."
         exit
+      end
+
+      unless unlimited_bundles?
+        display "===== Deleting most recent bundle from Heroku..."
+
+        %x{ heroku bundles:destroy #{latest_bundle_name} #{app_option} }
       end
 
       display "===== Capturing a new bundle..."

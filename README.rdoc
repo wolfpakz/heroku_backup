@@ -18,10 +18,13 @@ This plugin requires two environment variables:
 You can also still use the old style - namely, using +config/s3.yml+
 (the S3 config file used with the paperclip gem).
 
-You'll also need to make sure that you've enabled the Single Bundle addon
-for your app:
+You'll also need to make sure that you've enabled the Single or Unlimited Bundle 
+addon for your app:
 
     $ heroku addons:add bundles:single
+    
+If you have the Unlimited bundles addon enabled, the Backup plugin will not 
+destroy any of your bundles on Heroku.
 
 == Usage
 

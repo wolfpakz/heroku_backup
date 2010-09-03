@@ -36,7 +36,7 @@ module Heroku::Command
 
       if missing_keys? && missing_config_file?
         display "ERROR: Set environment variables #{S3_KEY} and #{S3_SECRET}" +
-                " or set up a config file at ./config/amazon_s3.yml to proceed." +
+                " or set up a config file at ./config/s3.yml to proceed." +
                 "  \nSee README for more information."
         exit
       end

@@ -19,8 +19,8 @@
 
 module Heroku::Command
   class Backup < BaseWithApp
-    S3_KEY    = 'AMAZON_ACCESS_KEY_ID'
-    S3_SECRET = 'AMAZON_SECRET_ACCESS_KEY'
+    S3_KEY    = 'S3_KEY'
+    S3_SECRET = 'S3_SECRET'
 
     def app_option
       '--app ' + @app

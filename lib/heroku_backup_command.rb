@@ -31,7 +31,7 @@ module Heroku::Command
     end
     
     def perma_bundle_name
-      [latest_bundle_name, [name, Time.now.strftime('%H%M')].join('-')
+      [latest_bundle_name, Time.now.strftime('%H%M')].join('-')
     end
     
     def unlimited_bundles?

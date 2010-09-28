@@ -30,6 +30,10 @@ module Heroku::Command
       %x{ heroku bundles #{app_option} | cut -f 1 -d ' ' | sed '$!d' }.chomp
     end
     
+    def perma_bundle_name
+      [latest_bundle_name, [name, Time.now.strftime('%H%M')].join('-')
+    end
+    
     def unlimited_bundles?
       bundle_addon = %x{ heroku addons #{app_option} | grep bundles }
       bundle_addon =~ /unlimited/
@@ -94,7 +98,7 @@ module Heroku::Command
 
       bundle_file_name = @app + '.tar.gz'
 
-      AWS::S3::S3Object.store(s3_filename(latest_bundle_name), open(bundle_file_name), s3_bucket)
+      AWS::S3::S3Object.store(s3_filename(perma_bundle_name), open(bundle_file_name), s3_bucket)
 
       display "===== Deleting the temporary bundle file..."
 

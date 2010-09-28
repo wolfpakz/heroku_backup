@@ -34,6 +34,11 @@ module Heroku::Command
       bundle_addon = %x{ heroku addons #{app_option} | grep bundles }
       bundle_addon =~ /unlimited/
     end
+    
+    def missing_bundles_addon?
+      bundle_addon = %x{ heroku addons #{app_option} | grep bundles }
+      bundle_addon == ''
+    end
 
     # Capture a new bundle and back it up to S3.
     def index
@@ -44,6 +49,11 @@ module Heroku::Command
                 " or set up a config file at ./config/s3.yml to proceed." +
                 "  \nSee README for more information."
         exit
+      end
+      
+      if missing_bundles_addon?
+        display "===== Installing Single Bundle Addon..."
+        %x{ heroku addons:add bundles:single }
       end
 
       unless unlimited_bundles?

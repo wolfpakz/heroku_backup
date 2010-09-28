@@ -53,7 +53,7 @@ module Heroku::Command
       
       if missing_bundles_addon?
         display "===== Installing Single Bundle Addon..."
-        %x{ heroku addons:add bundles:single }
+        %x{ heroku addons:add bundles:single #{app_option} }
       end
 
       unless unlimited_bundles?

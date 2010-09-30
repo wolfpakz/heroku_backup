@@ -74,7 +74,7 @@ module Heroku::Command
       display "===== Capturing a new bundle..."
       bundle = heroku.bundle_capture(@app)
 
-      while latest_bundle[:state] = "capturing"
+      while latest_bundle[:state] == "capturing"
         sleep 5
       end
 

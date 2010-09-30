@@ -22,26 +22,32 @@ module Heroku::Command
     S3_KEY    = 'S3_KEY'
     S3_SECRET = 'S3_SECRET'
 
+    def addons
+      heroku.installed_addons(@app).select { |a| a['configured'] }
+    end
+    
     def app_option
       '--app ' + @app
     end
 
+    def latest_bundle
+      heroku.bundles(@app).last
+    end
+    
     def latest_bundle_name
-      %x{ heroku bundles #{app_option} | cut -f 1 -d ' ' | sed '$!d' }.chomp
+      latest_bundle[:name]
     end
     
     def perma_bundle_name
-      [latest_bundle_name, Time.now.strftime('%H%M')].join('-')
+      [latest_bundle_name, latest_bundle[:created_at].strftime('%H%M')].join('-')
     end
     
     def unlimited_bundles?
-      bundle_addon = %x{ heroku addons #{app_option} | grep bundles }
-      bundle_addon =~ /unlimited/
+      !addons.find { |a| a['name'] =~ /bundles:unlimited/ }.nil?
     end
     
     def missing_bundles_addon?
-      bundle_addon = %x{ heroku addons #{app_option} | grep bundles }
-      bundle_addon == ''
+      addons.find { |a| a['name'] =~ /bundles/ }.nil?
     end
 
     # Capture a new bundle and back it up to S3.
@@ -57,31 +63,25 @@ module Heroku::Command
       
       if missing_bundles_addon?
         display "===== Installing Single Bundle Addon..."
-        %x{ heroku addons:add bundles:single #{app_option} }
+        heroku.install_addon(@app, "bundles:single", {})
       end
 
       unless unlimited_bundles?
         display "===== Deleting most recent bundle from Heroku..."
-
-        %x{ heroku bundles:destroy #{latest_bundle_name} #{app_option} }
+        heroku.bundle_destroy(@app, latest_bundle_name)
       end
 
       display "===== Capturing a new bundle..."
+      bundle = heroku.bundle_capture(@app)
 
-      %x{ heroku bundles:capture #{app_option} }
-
-      while %x{ heroku bundles #{app_option} | grep '#{latest_bundle_name}' } =~ /capturing/
-        sleep 10
+      while latest_bundle[:state] = "capturing"
+        sleep 5
       end
 
       display "===== Downloading new bundle..."
+      Heroku::Command.run_internal('bundles:download', ['--app', @app])
 
-      %x{ heroku bundles:download #{app_option} }
-
-      display "===== Pushing the bundle up to S3..."
-
-      # Establish a connection to S3.
-
+      display "===== Pushing the bundle to S3..."
       if missing_keys?
         aws_creds =  YAML::load(ERB.new(File.read(config_file_path)).result)["production"]
 
@@ -97,11 +97,9 @@ module Heroku::Command
       end
 
       bundle_file_name = @app + '.tar.gz'
-
       AWS::S3::S3Object.store(s3_filename(perma_bundle_name), open(bundle_file_name), s3_bucket)
 
       display "===== Deleting the temporary bundle file..."
-
       FileUtils.rm(bundle_file_name)
     end
 
@@ -112,7 +110,7 @@ module Heroku::Command
       end
       
       def s3_filename(bundle_name)
-        month_prefix = Date.today.strftime('%Y.%m')
+        month_prefix = latest_bundle[:created_at].strftime('%Y.%m')
         filename = bundle_name + '.tar.gz'
         [month_prefix, filename].join('/')
       end

@@ -72,7 +72,8 @@ module Heroku::Command
       end
 
       display "===== Capturing a new bundle..."
-      bundle = heroku.bundle_capture(@app)
+      new_bundle = Time.now.strftime('%Y-%m-%d')
+      heroku.bundle_capture(@app, new_bundle)
 
       while latest_bundle[:state] == "capturing"
         sleep 5

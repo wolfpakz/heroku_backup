@@ -66,7 +66,7 @@ module Heroku::Command
         heroku.install_addon(@app, "bundles:single", {})
       end
 
-      unless unlimited_bundles?
+      unless unlimited_bundles? || !latest_bundle
         display "===== Deleting most recent bundle from Heroku..."
         heroku.bundle_destroy(@app, latest_bundle_name)
       end

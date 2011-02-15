@@ -102,10 +102,6 @@ module Heroku::Command
       pgbackups.pgbackup_client.get_latest_backup
     end
 
-    def latest_bundle_name
-      latest_bundle[:name]
-    end
-
     def missing_config_file?
       !File.exists? config_file_path
     end

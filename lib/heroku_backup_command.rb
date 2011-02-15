@@ -48,7 +48,7 @@ module Heroku::Command
       created.strftime('%Y-%m-%d-%H%M') + ".dump"
     end
 
-    # Capture a new bundle and back it up to S3.
+    # Capture a new backup and send it to S3.
     def index
       require 'erb'
 
@@ -70,10 +70,10 @@ module Heroku::Command
       display "===== Capturing a new backup..."
       pgbackups.capture
 
-      display "===== Downloading new bundle..."
+      display "===== Downloading new backup..."
       download_backup
 
-      display "===== Pushing the bundle to S3..."
+      display "===== Pushing the backup to S3..."
       if missing_keys?
         aws_creds =  YAML::load(ERB.new(File.read(config_file_path)).result)["production"]
 
@@ -126,10 +126,6 @@ module Heroku::Command
 
         heroku.uninstall_addon(@app, addon['name'])
       end
-    end
-
-    def unlimited_bundles?
-      !addons.find { |a| a['name'] =~ /bundles:unlimited/ }.nil?
     end
 
     private

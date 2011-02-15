@@ -121,7 +121,7 @@ module Heroku::Command
     def remove_bundles_addon
       addons.select { |a| a['name'] =~ /bundles/ }.each do |addon|
         display "==== Removing deprecated bundles addon #{addon['name']}"
-        heroku.uninstall_addon(@app, a['name'])
+        heroku.uninstall_addon(@app, addon['name'])
       end
     end
 

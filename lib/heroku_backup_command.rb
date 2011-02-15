@@ -71,7 +71,7 @@ module Heroku::Command
       end
 
       display "===== Capturing a new backup..."
-      pgbackups.capture_backup
+      pgbackups.capture
 
       display "===== Downloading new bundle..."
       download_backup

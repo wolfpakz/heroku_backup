@@ -43,7 +43,8 @@ module Heroku::Command
     end
 
     def download_file_name
-      created   = Time.parse(latest_backup['created_at'])
+      backup    = latest_backup
+      created   = Time.parse(backup['finished_at'])
       created.strftime('%Y-%m-%d-%H%M') + ".dump"
     end
 
@@ -134,7 +135,7 @@ module Heroku::Command
     private
 
     def s3_filename(backup_name)
-      month_prefix = Time.parse(latest_backup["created_at"]).strftime('%Y.%m')
+      month_prefix = Time.parse(latest_backup["finished_at"]).strftime('%Y.%m')
       [month_prefix, backup_name].join('/')
     end
 

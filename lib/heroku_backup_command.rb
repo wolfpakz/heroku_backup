@@ -115,7 +115,7 @@ module Heroku::Command
     end
 
     def pgbackups
-      @pg ||= Heroku::Command::Pgbackups.new([app_option, '--expire')
+      @pg ||= Heroku::Command::Pgbackups.new([app_option, '--expire'])
     end
 
     def remove_bundles_addon

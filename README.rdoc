@@ -1,11 +1,11 @@
 = Heroku Backup Command
 
 Plugin that provides the backup command for the heroku gem. This allows you
-to automate the process of backing up bundles to S3.
+to automate the process of backing up your database to S3 using the pgbackups addon.
 
 == Installation
 
-    $ heroku plugins:install git@github.com:mgomes/heroku_backup.git
+    $ heroku plugins:install git@github.com:wolfpakz/heroku_backup.git
 
 == Setup
 
@@ -18,13 +18,12 @@ This plugin requires two environment variables:
 You can also still use the old style - namely, using +config/s3.yml+
 (the S3 config file used with the paperclip gem).
 
-You'll also need to make sure that you've enabled the Single or Unlimited Bundle 
-addon for your app:
+The Backup plugin uses the pgbackups plugin to capture a backup of your
+database.  If you do not have the addon installed, pgbackups:basic will
+automatically be installed the first time you run Backup.
 
-    $ heroku addons:add bundles:single
-    
-If you have the Unlimited bundles addon enabled, the Backup plugin will not 
-destroy any of your bundles on Heroku.
+Note: All backups are captured with the --expire option, so your oldest backup
+will be overriden once you've reached your backup limit.
 
 == Usage
 
@@ -42,6 +41,7 @@ That'll make the magic happen.
 
 == Contributors
 
+* Mauricio Gomes
 * Nathaniel Jones (nthj)
 * Tom Brown (herestomwiththeweather)
 

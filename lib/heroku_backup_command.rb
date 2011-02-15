@@ -27,10 +27,6 @@ module Heroku::Command
       heroku.installed_addons(@app).select { |a| a['configured'] }
     end
     
-    def app_option
-      '--app ' + @app
-    end
-
     def bundles_addon_installed?
       addons.any? { |a| a['name'] =~ /bundles/ }
     end
@@ -43,7 +39,7 @@ module Heroku::Command
       file_name = download_file_name
       url       = latest_backup['public_url']
       File.open(file_name, "wb") { |f| f.write RestClient.get(url).to_s }
-      display "Downloaded #{File.stat(file_name).size} byte backup to #{file_name}"
+      display "Saved #{File.stat(file_name).size} byte backup to #{file_name}"
     end
 
     def download_file_name
@@ -115,7 +111,7 @@ module Heroku::Command
     end
 
     def pgbackups
-      @pg ||= Heroku::Command::Pgbackups.new([app_option, '--expire'])
+      @pg ||= Heroku::Command::Pgbackups.new(['--app', @app, '--expire'])
     end
 
     def remove_bundles_addon

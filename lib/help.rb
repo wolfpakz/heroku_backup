@@ -18,5 +18,5 @@
 =end
 
 Heroku::Command::Help.group('Backup Command') do |group|
-  group.command('backup', 'captures a new bundle and uploads it to your S3')
+  group.command('backup', 'captures a new pgbackup and uploads it to the S3 bucket of your choice')
 end

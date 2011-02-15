@@ -1,7 +1,5 @@
 =begin
-  Copyright (c) 2010 Matt Buck.
-
-  This file is part of Heroku Backup Command.
+  Copyright (c) 2011 Dan Porter.
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,6 +15,9 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 =end
 
+require 'heroku'
+require 'heroku/command'
+
 module Heroku::Command
   class Backup < BaseWithApp
     S3_KEY    = 'S3_KEY'
@@ -30,29 +31,32 @@ module Heroku::Command
       '--app ' + @app
     end
 
-    def latest_bundle
-      heroku.bundles(@app).last
+    def bundles_addon_installed?
+      addons.any? { |a| a['name'] =~ /bundles/ }
     end
-    
-    def latest_bundle_name
-      latest_bundle[:name]
+
+    def config_file_path
+      File.join(Dir.getwd, 'config', 's3.yml')
     end
-    
-    def perma_bundle_name
-      [latest_bundle_name, latest_bundle[:created_at].strftime('%H%M')].join('-')
+
+    def download_backup
+      file_name = download_file_name
+      url       = latest_backup['public_url']
+      File.open(file_name, "wb") { |f| f.write RestClient.get(url).to_s }
+      display "Downloaded #{File.stat(file_name).size} byte backup to #{file_name}"
     end
-    
-    def unlimited_bundles?
-      !addons.find { |a| a['name'] =~ /bundles:unlimited/ }.nil?
-    end
-    
-    def missing_bundles_addon?
-      addons.find { |a| a['name'] =~ /bundles/ }.nil?
+
+    def download_file_name
+      created   = Time.parse(latest_backup['created_at'])
+      created.strftime('%Y-%m-%d-%H%M') + ".dump"
     end
 
     # Capture a new bundle and back it up to S3.
     def index
       require 'erb'
+
+      # Remove the deprecated bundles addon
+      remove_bundles_addon if bundles_addon_installed?
 
       if missing_keys? && missing_config_file?
         display "ERROR: Set environment variables #{S3_KEY} and #{S3_SECRET}" +
@@ -61,26 +65,16 @@ module Heroku::Command
         exit
       end
       
-      if missing_bundles_addon?
-        display "===== Installing Single Bundle Addon..."
-        heroku.install_addon(@app, "bundles:single", {})
+      if missing_pgbackups?
+        display "===== Installing PG Backups Basic Addon..."
+        heroku.install_addon(@app, "pgbackups:basic", {})
       end
 
-      unless unlimited_bundles? || !latest_bundle
-        display "===== Deleting most recent bundle from Heroku..."
-        heroku.bundle_destroy(@app, latest_bundle_name)
-      end
-
-      display "===== Capturing a new bundle..."
-      new_bundle = Time.now.strftime('%Y-%m-%d')
-      heroku.bundle_capture(@app, new_bundle)
-
-      while latest_bundle[:state] == "capturing"
-        sleep 5
-      end
+      display "===== Capturing a new backup..."
+      pgbackups.capture_backup
 
       display "===== Downloading new bundle..."
-      Heroku::Command.run_internal('bundles:download', ['--app', @app])
+      download_backup
 
       display "===== Pushing the bundle to S3..."
       if missing_keys?
@@ -97,41 +91,64 @@ module Heroku::Command
         )
       end
 
-      bundle_file_name = @app + '.tar.gz'
-      AWS::S3::S3Object.store(s3_filename(perma_bundle_name), open(bundle_file_name), s3_bucket)
+      file_name = download_file_name
+      AWS::S3::S3Object.store(s3_filename(file_name), open(file_name), s3_bucket)
 
-      display "===== Deleting the temporary bundle file..."
-      FileUtils.rm(bundle_file_name)
+      display "===== Deleting the temporary download file..."
+      FileUtils.rm(file_name)
+    end
+
+    def latest_backup
+      pgbackups.pgbackup_client.get_latest_backup
+    end
+
+    def latest_bundle_name
+      latest_bundle[:name]
+    end
+
+    def missing_config_file?
+      !File.exists? config_file_path
+    end
+
+    def missing_keys?
+      ENV[S3_KEY].nil? || ENV[S3_SECRET].nil?
+    end
+
+    def missing_pgbackups?
+      addons.find { |a| a['name'] =~ /pgbackups/ }.nil?
+    end
+
+    def pgbackups
+      @pg ||= Heroku::Command::Pgbackups.new(['--app', @app])
+    end
+
+    def remove_bundles_addon
+      addons.select { |a| a['name'] =~ /bundles/ }.each do |addon|
+        display "==== Removing deprecated bundles addon #{addon['name']}"
+        heroku.uninstall_addon(@app, a['name'])
+      end
+    end
+
+    def unlimited_bundles?
+      !addons.find { |a| a['name'] =~ /bundles:unlimited/ }.nil?
     end
 
     private
 
-      def config_file_path
-        File.join(Dir.getwd, 'config', 's3.yml')
-      end
-      
-      def s3_filename(bundle_name)
-        month_prefix = latest_bundle[:created_at].strftime('%Y.%m')
-        filename = bundle_name + '.tar.gz'
-        [month_prefix, filename].join('/')
-      end
+    def s3_filename(backup_name)
+      month_prefix = Time.parse(latest_backup["created_at"]).strftime('%Y.%m')
+      [month_prefix, backup_name].join('/')
+    end
 
-      def missing_config_file?
-        !File.exists? config_file_path
+    def s3_bucket
+      retries = 1
+      begin
+        return @app + '-backups' if AWS::S3::Bucket.find(@app + '-backups')
+      rescue AWS::S3::NoSuchBucket
+        AWS::S3::Bucket.create(@app + '-backups')
+        retry if retries > 0 && (retries -= 1)
       end
+    end
 
-      def missing_keys?
-        ENV[S3_KEY].nil? || ENV[S3_SECRET].nil?
-      end
-
-      def s3_bucket
-        retries = 1
-        begin
-          return @app + '-backups' if AWS::S3::Bucket.find(@app + '-backups')
-        rescue AWS::S3::NoSuchBucket
-          AWS::S3::Bucket.create(@app + '-backups')
-          retry if retries > 0 && (retries -= 1)
-        end
-      end
   end
 end

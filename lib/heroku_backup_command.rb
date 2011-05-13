@@ -45,7 +45,7 @@ module Heroku::Command
 
       if missing_pgbackups?
         display "===== Installing PG Backups Basic Addon..."
-        heroku.install_addon(@app, "pgbackups:basic", {})
+        heroku.install_addon(app, "pgbackups:basic", {})
       end
 
       display "===== Capturing a new backup..."
@@ -78,7 +78,7 @@ module Heroku::Command
     
     protected
     def addons
-      heroku.installed_addons(@app).select { |a| a['configured'] }
+      heroku.installed_addons(app).select { |a| a['configured'] }
     end
     
     def bundles_addon_installed?
@@ -103,7 +103,7 @@ module Heroku::Command
     end
 
     def latest_backup
-      pgbackups.pgbackup_client.get_latest_backup
+      pgbackups.send(:pgbackup_client).get_latest_backup
     end
 
     def missing_config_file?
@@ -119,19 +119,19 @@ module Heroku::Command
     end
 
     def pgbackups
-      @pg ||= Heroku::Command::Pgbackups.new(['--app', @app, '--expire'])
+      @pg ||= Heroku::Command::Pgbackups.new([], :app => app, :expire => true)
     end
 
     def remove_bundles_addon
       addons.select { |a| a['name'] =~ /bundles/ }.each do |addon|
         display "==== Removing deprecated bundles addon #{addon['name']}"
 
-        heroku.bundles(@app).each do |bundle|
+        heroku.bundles(app).each do |bundle|
           display "Removing bundle #{bundle[:name]}"
-          heroku.bundle_destroy(@app, bundle[:name])
+          heroku.bundle_destroy(app, bundle[:name])
         end
 
-        heroku.uninstall_addon(@app, addon['name'])
+        heroku.uninstall_addon(app, addon['name'])
       end
     end
 
@@ -145,9 +145,9 @@ module Heroku::Command
     def s3_bucket
       retries = 1
       begin
-        return @app + '-backups' if AWS::S3::Bucket.find(@app + '-backups')
+        return app + '-backups' if AWS::S3::Bucket.find(app + '-backups')
       rescue AWS::S3::NoSuchBucket
-        AWS::S3::Bucket.create(@app + '-backups')
+        AWS::S3::Bucket.create(app + '-backups')
         retry if retries > 0 && (retries -= 1)
       end
     end

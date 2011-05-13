@@ -4,7 +4,7 @@ require '../lib/heroku_backup_command'
 describe Heroku::Command::Backup do
   before(:each) do
     @app = "test-app"
-    @backup = Heroku::Command::Backup.new(['--app', @app])
+    @backup = Heroku::Command::Backup.new([], :app => @app)
   end
 
   describe "addons" do

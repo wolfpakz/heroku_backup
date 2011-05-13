@@ -20,11 +20,16 @@
 require "heroku/command/base"
 
 module Heroku::Command
+
+  # backup pgdumps to s3
   class Backup < BaseWithApp
     S3_KEY    = 'S3_KEY'
     S3_SECRET = 'S3_SECRET'
 
-    # Capture a new backup and send it to S3.
+    # backup
+    #
+    # capture a new backup and send it to S3.
+    #
     def index
       require 'erb'
 

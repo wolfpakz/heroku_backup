@@ -119,7 +119,7 @@ module Heroku::Command
     end
 
     def pgbackups
-      @pg ||= Heroku::Command::Pgbackups.new([], :app => app, :expire => true)
+      @pg ||= Pgbackups.new([], :app => app, :expire => true)
     end
 
     def remove_bundles_addon

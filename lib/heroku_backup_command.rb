@@ -15,38 +15,14 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 =end
 
-require 'heroku'
-require 'heroku/command'
+#require 'heroku'
+#require 'heroku/command'
+require "heroku/command/base"
 
 module Heroku::Command
   class Backup < BaseWithApp
     S3_KEY    = 'S3_KEY'
     S3_SECRET = 'S3_SECRET'
-
-    def addons
-      heroku.installed_addons(@app).select { |a| a['configured'] }
-    end
-    
-    def bundles_addon_installed?
-      addons.any? { |a| a['name'] =~ /bundles/ }
-    end
-
-    def config_file_path
-      File.join(Dir.getwd, 'config', 's3.yml')
-    end
-
-    def download_backup
-      file_name = download_file_name
-      url       = latest_backup['public_url']
-      File.open(file_name, "wb") { |f| f.write RestClient.get(url).to_s }
-      display "Saved #{File.stat(file_name).size} byte backup to #{file_name}"
-    end
-
-    def download_file_name
-      backup    = latest_backup
-      created   = Time.parse(backup['finished_at'])
-      created.strftime('%Y-%m-%d-%H%M') + ".dump"
-    end
 
     # Capture a new backup and send it to S3.
     def index
@@ -61,7 +37,7 @@ module Heroku::Command
                 "  \nSee README for more information."
         exit
       end
-      
+
       if missing_pgbackups?
         display "===== Installing PG Backups Basic Addon..."
         heroku.install_addon(@app, "pgbackups:basic", {})
@@ -93,6 +69,32 @@ module Heroku::Command
 
       display "===== Deleting the temporary download file..."
       FileUtils.rm(file_name)
+    end
+    
+    protected
+    def addons
+      heroku.installed_addons(@app).select { |a| a['configured'] }
+    end
+    
+    def bundles_addon_installed?
+      addons.any? { |a| a['name'] =~ /bundles/ }
+    end
+
+    def config_file_path
+      File.join(Dir.getwd, 'config', 's3.yml')
+    end
+
+    def download_backup
+      file_name = download_file_name
+      url       = latest_backup['public_url']
+      File.open(file_name, "wb") { |f| f.write RestClient.get(url).to_s }
+      display "Saved #{File.stat(file_name).size} byte backup to #{file_name}"
+    end
+
+    def download_file_name
+      backup    = latest_backup
+      created   = Time.parse(backup['finished_at'])
+      created.strftime('%Y-%m-%d-%H%M') + ".dump"
     end
 
     def latest_backup

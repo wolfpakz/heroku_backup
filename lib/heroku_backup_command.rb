@@ -25,6 +25,7 @@ module Heroku::Command
   class Backup < BaseWithApp
     S3_KEY    = 'S3_KEY'
     S3_SECRET = 'S3_SECRET'
+    S3_BUCKET = 'S3_BUCKET'
 
     # backup
     #
@@ -111,7 +112,7 @@ module Heroku::Command
     end
 
     def missing_keys?
-      ENV[S3_KEY].nil? || ENV[S3_SECRET].nil?
+      ENV[S3_KEY].nil? || ENV[S3_SECRET].nil? || ENV[S3_BUCKET].nil?
     end
 
     def missing_pgbackups?
@@ -139,15 +140,15 @@ module Heroku::Command
 
     def s3_filename(backup_name)
       month_prefix = Time.parse(latest_backup["finished_at"]).strftime('%Y.%m')
-      [month_prefix, backup_name].join('/')
+      [app, month_prefix, backup_name].join('/')
     end
 
     def s3_bucket
       retries = 1
       begin
-        return app + '-backups' if AWS::S3::Bucket.find(app + '-backups')
+        return ENV[S3_BUCKET] if AWS::S3::Bucket.find(ENV[S3_BUCKET])
       rescue AWS::S3::NoSuchBucket
-        AWS::S3::Bucket.create(app + '-backups')
+        AWS::S3::Bucket.create(ENV[S3_BUCKET])
         retry if retries > 0 && (retries -= 1)
       end
     end
